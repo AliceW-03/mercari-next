@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { subscribeUser, unsubscribeUser, sendNotification } from './actions'
 import { ErudaDebug } from '@/components/ErudaDebug'
+import { PullToRefresh } from '@/components/PullToRefresh'
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -229,9 +230,44 @@ function InstallPrompt() {
   )
 }
 
+function RefreshButton() {
+  const [isStandalone, setIsStandalone] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
+
+  useEffect(() => {
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent))
+    setIsStandalone(window.matchMedia('(display-mode: standalone)').matches)
+  }, [])
+
+  if (!isIOS || !isStandalone) return null
+
+  return (
+    <button
+      onClick={() => window.location.reload()}
+      className="fixed bottom-4 right-4 bg-blue-500 text-white p-2 rounded-full shadow-lg"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+        />
+      </svg>
+    </button>
+  )
+}
+
 export default function Page() {
   return (
     <div>
+      <PullToRefresh />
       <ErudaDebug />
       <PushNotificationManager />
       <InstallPrompt />

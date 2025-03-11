@@ -46,13 +46,13 @@ self.addEventListener("push", function (event) {
 
     const options = {
       body: data.body,
-      icon: data.icon || "/icons/72.png",
-      badge: "/icons/72.png", // iOS 需要 badge
-      sound: "default", // iOS 声音
-      vibrate: [100, 50, 100],
+      icon: "/icons/72.png",
+      badge: "/icons/72.png",
+      tag: new Date().getTime().toString(), // 确保每个通知都是唯一的
+      renotify: true,
+      requireInteraction: true,
       data: {
-        dateOfArrival: Date.now(),
-        primaryKey: "2",
+        url: "https://mercari-next.vercel.app",
       },
       image:
         "https://static.mercdn.net/item/detail/webp/photos/m53658219971_1.jpg?1722428919",
@@ -71,5 +71,5 @@ self.addEventListener("push", function (event) {
 self.addEventListener("notificationclick", function (event) {
   console.log("Notification click received.")
   event.notification.close()
-  event.waitUntil(clients.openWindow("<https://your-website.com>"))
+  event.waitUntil(clients.openWindow(event.notification.data.url))
 })

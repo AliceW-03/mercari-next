@@ -73,13 +73,14 @@ async function sendNotificationWithRetry(
   const isApplePush = subscription.endpoint.includes("web.push.apple.com")
 
   const options: RequestOptions = {
-    timeout: isApplePush ? 60000 : 30000, // iOS 需要更长的超时时间
+    timeout: isApplePush ? 60000 : 30000,
     TTL: 60 * 60,
-    // iOS 推送需要特殊处理
     headers: isApplePush
       ? {
           "apns-priority": "5",
           "apns-push-type": "alert",
+          "apns-topic": "web.mercari-next.vercel.app",
+          "apns-expiration": "0",
         }
       : undefined,
     urgency: "high",
@@ -136,11 +137,20 @@ export async function sendNotification(message: string) {
     const payload = JSON.stringify({
       title: "Push Notification",
       body: message,
-      // iOS 需要这些字段
-      sound: "default",
-      badge: 1,
-      mutable_content: 1,
-      "content-available": 1,
+      aps: {
+        alert: {
+          title: "Push Notification",
+          body: message,
+        },
+        sound: "default",
+        badge: 1,
+        "content-available": 1,
+      },
+      webpush: {
+        headers: {
+          Urgency: "high",
+        },
+      },
     })
     console.log("Prepared payload:", payload)
 
