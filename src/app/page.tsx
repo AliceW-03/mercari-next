@@ -24,19 +24,48 @@ function PushNotificationManager() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
+    console.log('VAPID Key:', process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)
+
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       setIsSupported(true)
       registerServiceWorker()
+
+      // Add update checking
+      setInterval(() => {
+        navigator.serviceWorker.ready.then((registration) => {
+          registration.update();
+        });
+      }, 1000 * 60 * 60); // Check for updates every hour
     }
   }, [])
 
   async function registerServiceWorker() {
-    const registration = await navigator.serviceWorker.register('/sw.js', {
-      scope: '/',
-      updateViaCache: 'none',
-    })
-    const sub = await registration.pushManager.getSubscription()
-    setSubscription(sub)
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+        updateViaCache: 'none', // Disable SW cache for the SW script itself
+      });
+
+      // Add update found handler
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available
+              if (confirm('新版本已可用。是否刷新页面以更新？')) {
+                window.location.reload();
+              }
+            }
+          });
+        }
+      });
+
+      const sub = await registration.pushManager.getSubscription();
+      setSubscription(sub);
+    } catch (error) {
+      console.error('Service Worker registration failed:', error);
+    }
   }
 
   async function subscribeToPush() {

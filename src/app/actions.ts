@@ -3,7 +3,7 @@
 import webpush, { PushSubscription } from "web-push"
 
 webpush.setVapidDetails(
-  "w954083089@outlook.com",
+  "https://mercari-next.vercel.app",
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
   process.env.VAPID_PRIVATE_KEY!
 )
