@@ -73,7 +73,7 @@ async function sendNotificationWithRetry(
   
   const options: RequestOptions = {
     timeout: 30000,
-    proxy: "http://127.0.0.1:7890",
+    // proxy: "http://127.0.0.1:7890",
     // agent: proxyAgent,
     TTL: 60 * 60,
     // rejectUnauthorized: false, // 仅在开发环境使用
