@@ -23,20 +23,38 @@ function PushNotificationManager() {
     null
   )
   const [message, setMessage] = useState('')
+  const [browserSupported, setBrowserSupported] = useState(true);
 
   useEffect(() => {
     console.log('VAPID Key:', process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)
 
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      setIsSupported(true)
-      registerServiceWorker()
+    // 检查浏览器是否支持推送通知
+    const checkSupport = () => {
+      if (!('serviceWorker' in navigator)) {
+        console.log('Service Worker not supported');
+        setBrowserSupported(false);
+        return false;
+      }
 
-      // Add update checking
-      setInterval(() => {
-        navigator.serviceWorker.ready.then((registration) => {
-          registration.update();
-        });
-      }, 1000 * 60 * 60); // Check for updates every hour
+      if (!('PushManager' in window)) {
+        console.log('Push notifications not supported');
+        setBrowserSupported(false);
+        return false;
+      }
+
+      if (
+        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+        !(window.navigator as any).standalone
+      ) {
+        console.log('iOS device detected - push notifications may not work');
+      }
+
+      return true;
+    };
+
+    if (checkSupport()) {
+      setIsSupported(true);
+      registerServiceWorker();
     }
   }, [])
 
@@ -89,14 +107,27 @@ function PushNotificationManager() {
   }
 
   async function sendTestNotification() {
-    if (subscription) {
-      await sendNotification(message)
-      setMessage('')
+    try {
+      console.log('Current subscription:', subscription);
+
+      if (!subscription) {
+        console.error('No subscription available');
+        return;
+      }
+
+      const result = await sendNotification(message);
+      if (result.success) {
+        setMessage('');
+      } else {
+        console.error('Failed to send notification:', result.error);
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error);
     }
   }
 
-  if (!isSupported) {
-    return <p>Push notifications are not supported in this browser.</p>
+  if (!browserSupported) {
+    return <p>您的浏览器不支持推送通知功能。如果您使用的是 iOS 设备，请注意 iOS 的 Safari 浏览器对 Web Push 支持有限。</p>;
   }
 
   return (
