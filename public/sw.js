@@ -40,7 +40,6 @@ self.addEventListener("push", function (event) {
   if (event.data) {
     const data = event.data.json()
 
-    // 如果是验证消息，不显示通知
     if (data.type === "validation") {
       return
     }
@@ -48,7 +47,8 @@ self.addEventListener("push", function (event) {
     const options = {
       body: data.body,
       icon: data.icon || "/icons/72.png",
-      // badge: '/badge.png',
+      badge: "/icons/72.png", // iOS 需要 badge
+      sound: "default", // iOS 声音
       vibrate: [100, 50, 100],
       data: {
         dateOfArrival: Date.now(),
@@ -56,6 +56,13 @@ self.addEventListener("push", function (event) {
       },
       image:
         "https://static.mercdn.net/item/detail/webp/photos/m53658219971_1.jpg?1722428919",
+      actions: [
+        // iOS 支持的操作按钮
+        {
+          action: "open",
+          title: "打开",
+        },
+      ],
     }
     event.waitUntil(self.registration.showNotification(data.title, options))
   }

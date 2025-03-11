@@ -115,12 +115,20 @@ function PushNotificationManager() {
 
   async function subscribeToPush() {
     const registration = await navigator.serviceWorker.ready
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
     const sub = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(
         process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
-      ),
+      )
     })
+
+    // iOS 设备特殊处理
+    if (isIOS) {
+      console.log('iOS device detected, using extended timeout...');
+    }
+
     setSubscription(sub)
     const serializedSub = JSON.parse(JSON.stringify(sub))
     await subscribeUser(serializedSub)

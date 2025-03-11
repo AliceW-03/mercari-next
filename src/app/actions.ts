@@ -70,25 +70,54 @@ async function sendNotificationWithRetry(
   payload: string,
   retries = 3
 ) {
+  const isApplePush = subscription.endpoint.includes("web.push.apple.com")
+
   const options: RequestOptions = {
-    timeout: 30000,
-    // proxy: "http://127.0.0.1:7890",
-    // agent: proxyAgent,
+    timeout: isApplePush ? 60000 : 30000, // iOS 需要更长的超时时间
     TTL: 60 * 60,
-    // rejectUnauthorized: false, // 仅在开发环境使用
+    // iOS 推送需要特殊处理
+    headers: isApplePush
+      ? {
+          "apns-priority": "5",
+          "apns-push-type": "alert",
+        }
+      : undefined,
+    urgency: "high",
   }
 
   for (let i = 0; i < retries; i++) {
     try {
+      console.log(
+        `Attempting to send notification to ${
+          isApplePush ? "iOS" : "other"
+        } device...`
+      )
       await webpush.sendNotification(subscription, payload, options)
+      console.log("Notification sent successfully")
       return true
     } catch (err) {
       const error = err as WebPushError
+      console.error("Push error:", {
+        statusCode: error.statusCode,
+        message: error.message,
+        endpoint: subscription.endpoint,
+      })
+
+      // iOS 特定错误处理
+      if (isApplePush && error.statusCode === 410) {
+        console.log("iOS subscription expired")
+        throw error
+      }
+
       if (i === retries - 1) throw error
-      console.log(
-        `Retry ${i + 1}/${retries} for endpoint: ${subscription.endpoint}`
-      )
-      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1))) // 递增延迟
+
+      // iOS 需要更长的重试间隔
+      const delay = isApplePush
+        ? Math.min(5000 * Math.pow(2, i), 30000)
+        : Math.min(1000 * Math.pow(2, i), 10000)
+
+      console.log(`Waiting ${delay}ms before retry...`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }
   return false
@@ -107,9 +136,11 @@ export async function sendNotification(message: string) {
     const payload = JSON.stringify({
       title: "Push Notification",
       body: message,
-      // icon: "/icons/72.png",
-      // image:
-      //   "https://static.mercdn.net/item/detail/webp/photos/m53658219971_1.jpg?1722428919",
+      // iOS 需要这些字段
+      sound: "default",
+      badge: 1,
+      mutable_content: 1,
+      "content-available": 1,
     })
     console.log("Prepared payload:", payload)
 
