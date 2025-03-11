@@ -58,30 +58,56 @@ function PushNotificationManager() {
     }
   }, [])
 
+  async function checkSubscriptionValidity(sub: PushSubscription) {
+    try {
+      // 尝试发送一个空的推送消息来验证订阅是否有效
+      await fetch(`/api/subscription/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ endpoint: sub.endpoint }),
+      });
+      return true;
+    } catch (error) {
+      console.log('Subscription is invalid:', error);
+      return false;
+    }
+  }
+
   async function registerServiceWorker() {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
-        updateViaCache: 'none', // Disable SW cache for the SW script itself
-      });
-
-      // Add update found handler
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New version available
-              if (confirm('新版本已可用。是否刷新页面以更新？')) {
-                window.location.reload();
-              }
-            }
-          });
-        }
+        updateViaCache: 'none',
       });
 
       const sub = await registration.pushManager.getSubscription();
-      setSubscription(sub);
+
+      if (sub) {
+        // 检查订阅是否有效
+        const isValid = await checkSubscriptionValidity(sub);
+        if (!isValid) {
+          // 如果订阅无效，清除它
+          await sub.unsubscribe();
+          await unsubscribeUser(sub.endpoint);
+          setSubscription(null);
+          return;
+        }
+
+        // 验证数据库中是否存在该订阅
+        const response = await fetch(`/api/subscription/check?endpoint=${encodeURIComponent(sub.endpoint)}`);
+        const { exists } = await response.json();
+
+        if (!exists) {
+          await sub.unsubscribe();
+          setSubscription(null);
+        } else {
+          setSubscription(sub);
+        }
+      } else {
+        setSubscription(null);
+      }
     } catch (error) {
       console.error('Service Worker registration failed:', error);
     }

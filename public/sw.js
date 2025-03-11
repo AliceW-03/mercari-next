@@ -39,6 +39,12 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("push", function (event) {
   if (event.data) {
     const data = event.data.json()
+
+    // 如果是验证消息，不显示通知
+    if (data.type === "validation") {
+      return
+    }
+
     const options = {
       body: data.body,
       icon: data.icon || "/icons/72.png",
