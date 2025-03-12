@@ -39,31 +39,37 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("push", function (event) {
   if (event.data) {
     const data = event.data.json()
+    console.log(data)
 
     if (data.type === "validation") {
       return
     }
 
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+
     const options = {
       body: data.body,
-      icon: "/icons/72.png",
       badge: "/icons/72.png",
-      tag: new Date().getTime().toString(), // 确保每个通知都是唯一的
-      renotify: true,
-      requireInteraction: true,
-      data: {
-        url: "https://mercari-next.vercel.app",
-      },
-      image:
-        "https://static.mercdn.net/item/detail/webp/photos/m53658219971_1.jpg?1722428919",
-      actions: [
-        // iOS 支持的操作按钮
-        {
-          action: "open",
-          title: "打开",
-        },
-      ],
+      ...(isIOS
+        ? {
+            // iOS 支持的基本选项
+            tag: new Date().getTime().toString(),
+            renotify: true,
+          }
+        : {
+            // 其他平台支持的完整选项
+            icon: data.icon,
+            image: data.image,
+            vibrate: [100, 50, 100],
+            actions: [
+              {
+                action: "open",
+                title: "打开",
+              },
+            ],
+          }),
     }
+
     event.waitUntil(self.registration.showNotification(data.title, options))
   }
 })

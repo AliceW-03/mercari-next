@@ -124,7 +124,14 @@ async function sendNotificationWithRetry(
   return false
 }
 
-export async function sendNotification(message: string) {
+type Message = {
+  title: string
+  body: string
+  icon: string
+  image: string
+}
+// export async function sendNotification(item: Message) {
+  export async function sendNotification(message:string) {
   try {
     console.log("Starting notification send...")
     const subscriptions = await prisma.pushSubscription.findMany()
@@ -135,22 +142,8 @@ export async function sendNotification(message: string) {
     }
 
     const payload = JSON.stringify({
-      title: "Push Notification",
-      body: message,
-      aps: {
-        alert: {
-          title: "Push Notification",
-          body: message,
-        },
-        sound: "default",
-        badge: 1,
-        "content-available": 1,
-      },
-      webpush: {
-        headers: {
-          Urgency: "high",
-        },
-      },
+      title: "mer"
+      
     })
     console.log("Prepared payload:", payload)
 
